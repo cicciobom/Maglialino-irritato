@@ -229,12 +229,12 @@
                     </label>
                 </div>
                 <div class="settings-option">
-                    <span>🎵 Musica</span>
-                    <input type="range" id="vol-music" min="0" max="1" step="0.1" value="0.3" oninput="AudioEngine.setVolume('music', this.value)">
+                    <span>🎵 Musica Ambient</span>
+                    <input type="range" id="vol-music" min="0" max="1" step="0.1" value="0.4" oninput="AudioEngine.setVolume('music', this.value)">
                 </div>
                 <div class="settings-option">
                     <span>💥 Effetti Gioco</span>
-                    <input type="range" id="vol-sfx" min="0" max="1" step="0.1" value="0.5" oninput="AudioEngine.setVolume('sfx', this.value)">
+                    <input type="range" id="vol-sfx" min="0" max="1" step="0.1" value="0.6" oninput="AudioEngine.setVolume('sfx', this.value)">
                 </div>
                 <div class="settings-option">
                     <span>🐦 Voce "Yey!"</span>
@@ -247,10 +247,10 @@
 
     <script>
         // ==========================================
-        // GESTIONE AUDIO MIGLIORATA
+        // GESTIONE AUDIO MIGLIORATA (CHILL / LO-FI)
         // ==========================================
         const AudioEngine = {
-            ctx: null, nodes: {}, volumes: { music: 0.3, sfx: 0.5, voice: 0.7 },
+            ctx: null, nodes: {}, volumes: { music: 0.4, sfx: 0.6, voice: 0.7 },
             musicInterval: null, isPlayingMusic: false,
             init() {
                 if (this.ctx) return;
@@ -283,32 +283,53 @@
             },
             playYey() {
                 if(!this.ctx || this.volumes.voice === 0) return;
-                const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
-                osc.type = 'sawtooth'; // Più "vocale"
+                // Doppio oscillatore per simulare un verso sibilante e divertente "Weeeeee!"
+                const osc1 = this.ctx.createOscillator(); 
+                const osc2 = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
                 
-                // Modulazione frequenza per fare "Yee-hooo"
-                osc.frequency.setValueAtTime(800, this.ctx.currentTime);
-                osc.frequency.linearRampToValueAtTime(1200, this.ctx.currentTime + 0.1);
-                osc.frequency.setValueAtTime(700, this.ctx.currentTime + 0.15);
-                osc.frequency.linearRampToValueAtTime(1400, this.ctx.currentTime + 0.3);
+                osc1.type = 'sine';
+                osc2.type = 'sawtooth';
+                
+                // Rampa di frequenza (Pitch slide up veloce)
+                osc1.frequency.setValueAtTime(500, this.ctx.currentTime);
+                osc1.frequency.exponentialRampToValueAtTime(1800, this.ctx.currentTime + 0.4);
+                
+                osc2.frequency.setValueAtTime(500, this.ctx.currentTime);
+                osc2.frequency.exponentialRampToValueAtTime(1800, this.ctx.currentTime + 0.4);
                 
                 gain.gain.setValueAtTime(0, this.ctx.currentTime);
-                gain.gain.linearRampToValueAtTime(0.6, this.ctx.currentTime + 0.05);
-                gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.4);
+                gain.gain.linearRampToValueAtTime(0.6, this.ctx.currentTime + 0.1);
+                gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.5);
                 
-                osc.connect(gain); gain.connect(this.nodes.voice); 
-                osc.start(); osc.stop(this.ctx.currentTime + 0.4);
+                osc1.connect(gain); osc2.connect(gain); gain.connect(this.nodes.voice); 
+                osc1.start(); osc2.start(); 
+                osc1.stop(this.ctx.currentTime + 0.5); osc2.stop(this.ctx.currentTime + 0.5);
             },
-            playOink() {
+            playOink(isHit = false) {
                 if(!this.ctx || this.volumes.sfx === 0) return;
-                const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(200, this.ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.2);
-                gain.gain.setValueAtTime(0.6, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
-                osc.connect(gain); gain.connect(this.nodes.sfx);
-                osc.start(); osc.stop(this.ctx.currentTime + 0.2);
+                const osc = this.ctx.createOscillator(); 
+                const gain = this.ctx.createGain();
+                const filter = this.ctx.createBiquadFilter();
+                
+                osc.type = 'sawtooth';
+                filter.type = 'lowpass';
+                
+                let duration = isHit ? 0.15 : 0.35;
+                let startFreq = isHit ? 250 : 150;
+                let endFreq = isHit ? 180 : 50;
+
+                osc.frequency.setValueAtTime(startFreq, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(endFreq, this.ctx.currentTime + duration);
+                
+                filter.frequency.setValueAtTime(800, this.ctx.currentTime);
+                filter.frequency.linearRampToValueAtTime(200, this.ctx.currentTime + duration);
+
+                gain.gain.setValueAtTime(0.8, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+                
+                osc.connect(filter); filter.connect(gain); gain.connect(this.nodes.sfx);
+                osc.start(); osc.stop(this.ctx.currentTime + duration);
             },
             playHit(intensity) {
                 if(!this.ctx || this.volumes.sfx === 0) return;
@@ -325,19 +346,83 @@
             startMusic() {
                 if(this.isPlayingMusic) return;
                 this.isPlayingMusic = true;
-                const notes = [261.6, 329.6, 392.0, 523.2, 392.0, 329.6]; 
-                let idx = 0;
-                this.musicInterval = setInterval(() => {
-                    if(this.ctx && this.volumes.music > 0) {
-                        const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
-                        osc.type = 'triangle'; osc.frequency.value = notes[idx];
-                        gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
-                        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
-                        osc.connect(gain); gain.connect(this.nodes.music);
-                        osc.start(); osc.stop(this.ctx.currentTime + 0.2);
+                
+                // --- GENERATORE DI MUSICA CHILL / AMBIENT ---
+                // Accordi morbidi (Cmaj7, Amin7, Fmaj7, G7)
+                const chords = [
+                    [130.81, 164.81, 196.00, 246.94], // Cmaj7
+                    [110.00, 130.81, 164.81, 196.00], // Amin7
+                    [87.31,  110.00, 130.81, 164.81], // Fmaj7
+                    [98.00,  123.47, 146.83, 174.61]  // G7
+                ];
+                // Melodie dolci sincronizzate con gli accordi
+                const melodies = [
+                    [392.00, null, 440.00, null, 523.25, null, 659.25, null], // Sopra C
+                    [null, 523.25, null, 392.00, 440.00, null, 329.63, null], // Sopra Am
+                    [349.23, null, 440.00, null, 523.25, null, 587.33, null], // Sopra F
+                    [392.00, null, 349.23, null, 293.66, null, 261.63, null]  // Sopra G
+                ];
+
+                let step = 0;
+                let measure = 0;
+                const stepTime = 0.45; // 450ms (Beat molto rilassato, ~133 BPM ma in ottavi)
+
+                const playNote = () => {
+                    if(!this.ctx || this.volumes.music === 0) return;
+                    const now = this.ctx.currentTime;
+                    
+                    // Suona l'Accordo/Pad all'inizio della battuta
+                    if (step === 0) {
+                        chords[measure].forEach((freq, i) => {
+                            const osc = this.ctx.createOscillator();
+                            const gain = this.ctx.createGain();
+                            osc.type = i === 0 ? 'triangle' : 'sine'; // Il basso ha più corpo
+                            osc.frequency.value = freq / (i === 0 ? 2 : 1); 
+                            
+                            gain.gain.setValueAtTime(0, now);
+                            gain.gain.linearRampToValueAtTime(0.08, now + 1.0); // Entrata dolce
+                            gain.gain.exponentialRampToValueAtTime(0.001, now + stepTime * 8); // Coda lunga
+                            
+                            osc.connect(gain); gain.connect(this.nodes.music);
+                            osc.start(now); osc.stop(now + stepTime * 8);
+                        });
                     }
-                    idx = (idx + 1) % notes.length;
-                }, 300);
+
+                    // Suona la Nota della Melodia
+                    const melFreq = melodies[measure][step];
+                    if (melFreq) {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'sine'; // Tono puro e chill
+                        osc.frequency.value = melFreq;
+                        
+                        gain.gain.setValueAtTime(0, now);
+                        gain.gain.linearRampToValueAtTime(0.12, now + 0.05);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + stepTime * 3); // Echo lungo
+                        
+                        osc.connect(gain); gain.connect(this.nodes.music);
+                        osc.start(now); osc.stop(now + stepTime * 3);
+                    }
+
+                    step++;
+                    if (step >= 8) {
+                        step = 0;
+                        measure = (measure + 1) % 4;
+                    }
+                };
+
+                const loop = () => {
+                    if(this.ctx) playNote();
+                    this.musicInterval = setTimeout(loop, stepTime * 1000);
+                };
+
+                if(this.ctx) {
+                    loop();
+                } else {
+                    let wait = setInterval(() => {
+                        if(this.ctx) { clearInterval(wait); loop(); }
+                    }, 100);
+                }
             }
         };
 
@@ -384,7 +469,7 @@
         let particles = [];
         let birdTrail = [];
         let stars = []; 
-        let cloudOffset = 0; // Per animazione nuvole fluide
+        let cloudOffset = 0; 
 
         let settingTrajectory = true;
         let settingParticles = true;
@@ -404,7 +489,7 @@
             for(let i=0; i<50; i++) { stars.push({ x: Math.random() * GAME_WIDTH, y: Math.random() * (GAME_HEIGHT/2), size: Math.random() * 2 + 1 }); }
 
             engine = Engine.create({ enableSleeping: true });
-            engine.positionIterations = 16; // Fondamentale per la stabilità delle strutture
+            engine.positionIterations = 16; 
             engine.velocityIterations = 12;
             world = engine.world;
             
@@ -471,31 +556,33 @@
         }
 
         // ==========================================
-        // API PAVIMENTO E BARRIERE (Sistemati per non fluttuare)
+        // API PAVIMENTO E BARRIERE INVISIBILI AI LATI
         // ==========================================
         function createEnvironmentAPI() {
-            // Struttura fissa fisica sagomata sul nuovo disegno continuo
             const ground1 = Bodies.rectangle(250, GAME_HEIGHT - 60, 700, 120, { isStatic: true, renderType: 'invisible', friction: 1 });
             const baseGround = Bodies.rectangle(750, GAME_HEIGHT - 30, 400, 60, { isStatic: true, renderType: 'invisible', friction: 1 });
             const ground2 = Bodies.rectangle(1400, GAME_HEIGHT - 125, 900, 250, { isStatic: true, renderType: 'invisible', friction: 1 });
             const ramp = Bodies.rectangle(950, GAME_HEIGHT - 155, 220, 30, { isStatic: true, renderType: 'invisible', friction: 1, angle: -1.08 });
             
-            // Barriere API per non uscire
-            const wallLeft = Bodies.rectangle(-100, GAME_HEIGHT/2, 200, GAME_HEIGHT*3, { isStatic: true, renderType: 'invisible' });
-            const wallRight = Bodies.rectangle(GAME_WIDTH + 500, GAME_HEIGHT/2, 200, GAME_HEIGHT*3, { isStatic: true, renderType: 'invisible' });
+            // --- NUOVI MURI DI GOMMA LATERALI ---
+            // x = -50 (così la faccia del muro è a x=0). Restitution alta per farli rimbalzare dentro.
+            const wallLeft = Bodies.rectangle(-50, GAME_HEIGHT/2, 100, GAME_HEIGHT*3, { isStatic: true, renderType: 'invisible', friction: 1, restitution: 0.5 });
+            // x = GAME_WIDTH + 50 (così la faccia del muro è a GAME_WIDTH).
+            const wallRight = Bodies.rectangle(GAME_WIDTH + 50, GAME_HEIGHT/2, 100, GAME_HEIGHT*3, { isStatic: true, renderType: 'invisible', friction: 1, restitution: 0.5 });
+            
+            // Tetto altissimo
             const ceiling = Bodies.rectangle(GAME_WIDTH/2, -800, GAME_WIDTH*3, 200, { isStatic: true, renderType: 'invisible' });
 
             World.add(world, [baseGround, ground1, ground2, ramp, wallLeft, wallRight, ceiling]);
         }
 
         // ==========================================
-        // SISTEMA DI IMPILAMENTO FISICO PERFETTO
+        // SISTEMA DI IMPILAMENTO FISICO E SPAWN MAIALI
         // ==========================================
         function createLevelDesign() {
             let numTowers = 1 + Math.floor(currentLevel / 3);
             if(numTowers > 3) numTowers = 3; 
-            
-            let startX = 1350; // Posizionate esattamente al centro dell'altopiano
+            let startX = 1350; 
             let spacing = 220; 
 
             for(let t=0; t<numTowers; t++) {
@@ -504,11 +591,9 @@
         }
 
         function buildTower(xPos, difficulty) {
-            // Il tetto del terreno visivo (ground2) è esattamente a GAME_HEIGHT - 250
             let currentY = GAME_HEIGHT - 250; 
             
             const addBlock = (x, w, h, mat, type) => {
-                // Posizionamento matematicamente perfetto: y è il centro del blocco
                 let yPos = currentY - (h / 2);
                 const b = Bodies.rectangle(x, yPos, w, h, { ...mat, renderType: type });
                 b.maxHealth = (type==='wood')?150 : (type==='stone')?400 : 80;
@@ -526,7 +611,7 @@
                 if(typeStr === 'ninja') { radius = 18; mat = {density: 0.004, friction: 0.6, restitution: 0.5}; hp = 70; pts = 10000; }
                 if(typeStr === 'king') { radius = 38; mat = {density: 0.012, friction: 0.9, restitution: 0.02}; hp = 300; pts = 25000; }
 
-                let yPos = currentY - radius; // Siede perfettamente sul piano
+                let yPos = currentY - radius; 
                 const p = Bodies.circle(x, yPos, radius, { ...mat, renderType: 'pig', pigType: typeStr, radius: radius });
                 p.maxHealth = hp; p.health = hp; p.pts = pts;
                 Sleeping.set(p, true); World.add(world, p); pigsTotal++;
@@ -537,38 +622,40 @@
             const blockThickness = 20;
             const cHeight = 80;
 
-            // Maialino base
             let basePigType = 'normal';
-            if(difficulty > 4 && Math.random() > 0.6) basePigType = 'ninja';
+            let rand = Math.random();
+            if(difficulty >= 1) {
+                if(rand > 0.8) basePigType = 'big';
+                else if(rand > 0.6) basePigType = 'ninja';
+            }
+            if(difficulty >= 2 && rand > 0.85) basePigType = 'armored';
             addPig(xPos, basePigType);
 
             for (let i = 0; i < floors; i++) {
                 let colMat = MAT_WOOD; let colType = 'wood';
-                if (difficulty >= 4 && Math.random() > 0.5) { colMat = MAT_STONE; colType = 'stone'; }
+                if (difficulty >= 3 && Math.random() > 0.5) { colMat = MAT_STONE; colType = 'stone'; }
                 else if (difficulty <= 2 && Math.random() > 0.5) { colMat = MAT_ICE; colType = 'ice'; }
 
-                // Aggiungi colonne verticali e aggiorna l'altezza di calcolo
                 addBlock(xPos - widthScale, blockThickness, cHeight, colMat, colType);
                 addBlock(xPos + widthScale, blockThickness, cHeight, colMat, colType);
-                currentY -= cHeight; // Saliamo del cHeight per il prossimo piano
+                currentY -= cHeight; 
 
-                // Aggiungi pavimento orizzontale
                 addBlock(xPos, (widthScale*2)+40, blockThickness, colMat, colType);
-                currentY -= blockThickness; // Saliamo dello spessore del pavimento
+                currentY -= blockThickness; 
 
-                // Se non è l'ultimo piano, mettiamo un maiale
                 if (i < floors - 1) { 
                     let floorPig = 'normal';
-                    if(difficulty > 3 && Math.random() > 0.5) floorPig = 'big';
-                    if(difficulty > 5 && Math.random() > 0.8) floorPig = 'armored';
+                    let frand = Math.random();
+                    if(difficulty > 1 && frand > 0.5) floorPig = 'ninja';
+                    if(difficulty > 2 && frand > 0.7) floorPig = 'big';
+                    if(difficulty > 3 && frand > 0.8) floorPig = 'armored';
                     addPig(xPos, floorPig); 
                 }
             }
             
-            // Maiale in cima alla torre
             let topPig = 'normal';
-            if(difficulty % 3 === 0) topPig = 'king'; // Ogni 3 livelli un King Pig in cima
-            else if(difficulty > 2) topPig = 'armored';
+            if (difficulty % 2 === 0 || Math.random() > 0.8) topPig = 'king'; 
+            else if (difficulty >= 2) topPig = 'armored';
             addPig(xPos, topPig);
         }
 
@@ -609,7 +696,7 @@
                     Body.setVelocity(currentBird, Vector.mult(diff, 0.25));
                     
                     AudioEngine.playLaunch(); 
-                    setTimeout(() => AudioEngine.playYey(), 100); // Lancia l'urlo appena parte
+                    setTimeout(() => AudioEngine.playYey(), 100);
                 }
             };
 
@@ -644,12 +731,18 @@
         function applyDamage(body, damage) {
             if (!body.health || body.renderType === 'ground' || body.renderType === 'invisible') return;
             body.health -= damage;
+            
+            if (body.renderType === 'pig' && body.health > 0 && damage > 15) {
+                AudioEngine.playOink(true); 
+            }
+
             if (body.health <= 0 && !bodiesToRemove.includes(body)) {
                 bodiesToRemove.push(body);
                 let pts = body.pts || (body.renderType === 'wood' ? 500 : body.renderType === 'stone' ? 1000 : 200);
+                
                 if (body.renderType === 'pig') {
                     pigsTotal--;
-                    AudioEngine.playOink(); // Suono quando un maiale muore
+                    AudioEngine.playOink(false);
                 }
                 
                 score += pts; updateUI();
@@ -675,8 +768,11 @@
                     if (birdTrail.length > 25) birdTrail.shift();
                 }
                 const speed = Vector.magnitude(currentBird.velocity);
-                if (speed < 0.5 || currentBird.position.x > GAME_WIDTH + 200 || currentBird.position.x < -100) {
-                    if (++birdTimer > 120 || currentBird.position.x > GAME_WIDTH + 200 || currentBird.position.x < -100) {
+                
+                // Limiti espansi ai margini dello schermo grazie ai muri di gomma. 
+                // Controlliamo solo se l'uccellino si ferma per terminare il turno.
+                if (speed < 0.5) {
+                    if (++birdTimer > 120) {
                         World.remove(world, currentBird); currentBird = null; birdTimer = 0;
                         if (birdsLeft <= 0) { if (pigsTotal > 0) { gameState = 'over'; setTimeout(() => showModal(false), 1500); } } 
                         else setTimeout(loadNextBird, 800);
@@ -711,7 +807,7 @@
         }
 
         // ==========================================
-        // RENDERING CANVAS
+        // RENDERING CANVAS (Texture Avanzate)
         // ==========================================
         function drawSky() {
             const theme = getCurrentTheme();
@@ -756,36 +852,23 @@
             const plat1Grad = ctx.createLinearGradient(0, GAME_HEIGHT-150, 0, GAME_HEIGHT);
             plat1Grad.addColorStop(0, theme.ground[0]); plat1Grad.addColorStop(1, theme.ground[1]); 
 
-            // 1. Diamo una forma continua al terreno di base (Senza stacchi visivi)
             ctx.fillStyle = plat1Grad;
-            ctx.beginPath();
-            ctx.moveTo(0, GAME_HEIGHT);
-            ctx.lineTo(0, GAME_HEIGHT - 120); 
+            ctx.beginPath(); ctx.moveTo(0, GAME_HEIGHT); ctx.lineTo(0, GAME_HEIGHT - 120); 
             ctx.quadraticCurveTo(250, GAME_HEIGHT - 120, 550, GAME_HEIGHT - 60); 
-            ctx.lineTo(900, GAME_HEIGHT - 60); // Pianura centrale priva di erba
-            ctx.lineTo(1000, GAME_HEIGHT - 250); 
-            ctx.lineTo(GAME_WIDTH, GAME_HEIGHT - 250); 
-            ctx.lineTo(GAME_WIDTH, GAME_HEIGHT);
-            ctx.closePath();
-            ctx.fill();
+            ctx.lineTo(900, GAME_HEIGHT - 60); 
+            ctx.lineTo(1000, GAME_HEIGHT - 250); ctx.lineTo(GAME_WIDTH, GAME_HEIGHT - 250); 
+            ctx.lineTo(GAME_WIDTH, GAME_HEIGHT); ctx.closePath(); ctx.fill();
 
-            // 2. Disegniamo l'erba SOLO sulle colline
             ctx.fillStyle = theme.grass[0];
-            // Erba SX
             ctx.beginPath(); ctx.moveTo(0, GAME_HEIGHT - 120); ctx.quadraticCurveTo(250, GAME_HEIGHT - 120, 550, GAME_HEIGHT - 60); ctx.lineTo(520, GAME_HEIGHT - 60); ctx.quadraticCurveTo(250, GAME_HEIGHT - 100, 0, GAME_HEIGHT - 100); ctx.fill();
-            // Erba DX
             ctx.beginPath(); ctx.moveTo(1000, GAME_HEIGHT - 250); ctx.lineTo(GAME_WIDTH, GAME_HEIGHT - 250); ctx.lineTo(GAME_WIDTH, GAME_HEIGHT - 230); ctx.lineTo(1020, GAME_HEIGHT - 230); ctx.lineTo(950, GAME_HEIGHT - 100); ctx.lineTo(910, GAME_HEIGHT - 60); ctx.lineTo(930, GAME_HEIGHT - 60); ctx.fill();
 
-            // 3. Linee di contorno cartoon
-            // Linea verde SX
             ctx.strokeStyle = theme.grassLine; ctx.lineWidth = 6;
             ctx.beginPath(); ctx.moveTo(0, GAME_HEIGHT - 120); ctx.quadraticCurveTo(250, GAME_HEIGHT - 120, 550, GAME_HEIGHT - 60); ctx.stroke();
             
-            // Linea marrone (Terra nuda) al centro
             ctx.strokeStyle = theme.ground[0]; ctx.lineWidth = 5;
             ctx.beginPath(); ctx.moveTo(548, GAME_HEIGHT - 60); ctx.lineTo(902, GAME_HEIGHT - 60); ctx.stroke();
 
-            // Linea verde DX
             ctx.strokeStyle = theme.grassLine; ctx.lineWidth = 8;
             ctx.beginPath(); ctx.moveTo(900, GAME_HEIGHT - 60); ctx.lineTo(1000, GAME_HEIGHT - 250); ctx.lineTo(GAME_WIDTH, GAME_HEIGHT - 250); ctx.stroke();
         }
@@ -799,7 +882,7 @@
             ctx.lineCap = 'round'; ctx.lineJoin = 'round';
             if (gameState === 'dragging' || gameState === 'ready' || gameState === 'menu') {
                 ctx.beginPath(); ctx.moveTo(sx - 15, sy - 5); ctx.lineTo(birdX + Math.cos(angle - Math.PI/2)*8, birdY + Math.sin(angle - Math.PI/2)*8);
-                ctx.lineWidth = 2.5; ctx.strokeStyle = '#221100'; ctx.stroke();
+                ctx.lineWidth = 3; ctx.strokeStyle = '#3E2723'; ctx.stroke();
             }
 
             ctx.fillStyle = '#4a2e1b';
@@ -830,10 +913,11 @@
 
             if (gameState === 'dragging' || gameState === 'ready' || gameState === 'menu') {
                 ctx.beginPath(); ctx.moveTo(sx + 30, sy - 5); ctx.lineTo(birdX + Math.cos(angle + Math.PI/2)*8, birdY + Math.sin(angle + Math.PI/2)*8);
-                ctx.lineWidth = 2.5; ctx.strokeStyle = '#221100'; ctx.stroke();
+                ctx.lineWidth = 3; ctx.strokeStyle = '#3E2723'; ctx.stroke();
             }
         }
 
+        // TEXTURES MIGLIORATE DEGLI ANIMALI E BLOCCHI
         function drawSingleBody(body, time) {
             const pos = body.position; const angle = body.angle;
             const width = body.bounds.max.x - body.bounds.min.x; const height = body.bounds.max.y - body.bounds.min.y;
@@ -844,21 +928,50 @@
 
             if (body.renderType === 'bird') {
                 ctx.scale(1, breathScale); 
-                ctx.fillStyle = '#212121'; ctx.fillRect(-BIRD_RADIUS - 12, -5, 14, 5); ctx.fillRect(-BIRD_RADIUS - 14, 1, 16, 5);
-                ctx.fillStyle = '#D32F2F'; ctx.beginPath(); ctx.moveTo(-5, -BIRD_RADIUS); ctx.lineTo(-10, -BIRD_RADIUS - 12); ctx.lineTo(4, -BIRD_RADIUS - 2); ctx.fill();
-                const birdGrad = ctx.createRadialGradient(-5, -5, 2, 0, 0, BIRD_RADIUS); birdGrad.addColorStop(0, '#FF5252'); birdGrad.addColorStop(0.8, '#D32F2F'); birdGrad.addColorStop(1, '#9e0000');
+                // Coda
+                ctx.fillStyle = '#111'; ctx.beginPath(); ctx.moveTo(-BIRD_RADIUS+2, 0); ctx.quadraticCurveTo(-BIRD_RADIUS-15, -10, -BIRD_RADIUS-18, -2); ctx.quadraticCurveTo(-BIRD_RADIUS-10, 2, -BIRD_RADIUS+2, 5); ctx.fill();
+                
+                // Ciuffo di piume rosse
+                ctx.fillStyle = '#D32F2F';
+                ctx.beginPath();
+                ctx.moveTo(0, -BIRD_RADIUS + 2);
+                ctx.quadraticCurveTo(5, -BIRD_RADIUS - 15, -5, -BIRD_RADIUS - 18);
+                ctx.quadraticCurveTo(-2, -BIRD_RADIUS - 10, -5, -BIRD_RADIUS + 2);
+                ctx.moveTo(-2, -BIRD_RADIUS + 2);
+                ctx.quadraticCurveTo(-8, -BIRD_RADIUS - 10, -12, -BIRD_RADIUS - 12);
+                ctx.quadraticCurveTo(-8, -BIRD_RADIUS - 5, -8, -BIRD_RADIUS + 2);
+                ctx.fill();
+                ctx.strokeStyle = '#B71C1C'; ctx.lineWidth = 1; ctx.stroke();
+
+                // Corpo principale con gradiente 3D
+                const birdGrad = ctx.createRadialGradient(-5, -5, 2, 0, 0, BIRD_RADIUS); 
+                birdGrad.addColorStop(0, '#FF8A80'); birdGrad.addColorStop(0.4, '#E53935'); birdGrad.addColorStop(1, '#880E4F');
                 ctx.fillStyle = birdGrad; ctx.beginPath(); ctx.arc(0, 0, BIRD_RADIUS, 0, 2 * Math.PI); ctx.fill();
-                ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.beginPath(); ctx.ellipse(-8, -8, 6, 4, Math.PI/4, 0, Math.PI*2); ctx.fill();
+                
+                // Macchie sulle guance
+                ctx.fillStyle = '#880E4F'; ctx.globalAlpha = 0.4;
+                ctx.beginPath(); ctx.arc(10, 2, 4, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(-8, 2, 4, 0, Math.PI*2); ctx.fill();
+                ctx.globalAlpha = 1.0;
+
+                // Pancia
                 ctx.fillStyle = '#FFEBEE'; ctx.beginPath(); ctx.arc(0, 6, BIRD_RADIUS * 0.8, 0, Math.PI, false); ctx.fill();
 
                 if (isBlinking) {
-                    ctx.strokeStyle = '#212121'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(3, -5); ctx.lineTo(11, -5); ctx.stroke(); ctx.beginPath(); ctx.moveTo(-6, -5); ctx.lineTo(2, -5); ctx.stroke();
+                    ctx.strokeStyle = '#212121'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(3, -5); ctx.lineTo(11, -5); ctx.stroke(); ctx.beginPath(); ctx.moveTo(-6, -5); ctx.lineTo(2, -5); ctx.stroke();
                 } else {
-                    ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(7, -5, 5, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(-2, -5, 5, 0, Math.PI*2); ctx.fill();
-                    ctx.fillStyle = 'black'; ctx.beginPath(); ctx.arc(8, -5, 2, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(-1, -5, 2, 0, Math.PI*2); ctx.fill();
+                    // Occhi dettagliati
+                    ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(6, -5, 5.5, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(-3, -5, 5.5, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = 'black'; ctx.beginPath(); ctx.arc(7.5, -5, 2.5, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(-1.5, -5, 2.5, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(8.5, -6, 1, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(-0.5, -6, 1, 0, Math.PI*2); ctx.fill(); 
                 }
-                ctx.fillStyle = '#212121'; ctx.beginPath(); ctx.moveTo(-9, -9); ctx.lineTo(12, -9); ctx.lineTo(15, -13); ctx.lineTo(3, -11); ctx.lineTo(-10, -13); ctx.fill();
-                ctx.fillStyle = '#FFCA28'; ctx.strokeStyle = '#FF8F00'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(10, 4); ctx.lineTo(22, 1); ctx.lineTo(10, -3); ctx.closePath(); ctx.fill(); ctx.stroke();
+                
+                // Sopracciglia incazzate (più definite)
+                ctx.fillStyle = '#212121'; ctx.beginPath(); ctx.moveTo(-10, -10); ctx.lineTo(13, -10); ctx.lineTo(17, -15); ctx.lineTo(3, -12); ctx.lineTo(-12, -15); ctx.fill();
+                
+                // Becco 3D
+                ctx.fillStyle = '#FFCA28'; ctx.strokeStyle = '#F57F17'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(11, 4); ctx.lineTo(26, 1); ctx.lineTo(11, -5); ctx.closePath(); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#FFB300'; ctx.beginPath(); ctx.moveTo(11, 4); ctx.lineTo(22, 6); ctx.lineTo(10, 1); ctx.fill(); 
 
             } else if (body.renderType === 'pig') {
                 const r = body.radius || 22;
@@ -868,54 +981,66 @@
                 ctx.fillStyle = '#7CB342'; ctx.beginPath(); ctx.arc(r/2, -r/2, r/3.5, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(-r/2, -r/2, r/3.5, 0, Math.PI*2); ctx.fill();
                 ctx.fillStyle = '#33691E'; ctx.beginPath(); ctx.arc(r/2, -r/2, r/7, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(-r/2, -r/2, r/7, 0, Math.PI*2); ctx.fill();
 
-                // Corpo
+                // Corpo con ombreggiatura
                 const pigGrad = ctx.createRadialGradient(-r/3, -r/3, r/4, 0, 0, r);
                 if (body.pigType === 'ninja') {
                     pigGrad.addColorStop(0, '#555'); pigGrad.addColorStop(0.7, '#222'); pigGrad.addColorStop(1, '#000');
                 } else {
-                    pigGrad.addColorStop(0, '#AED581'); pigGrad.addColorStop(0.7, '#8BC34A'); pigGrad.addColorStop(1, '#558B2F');
+                    pigGrad.addColorStop(0, '#AED581'); pigGrad.addColorStop(0.7, '#7CB342'); pigGrad.addColorStop(1, '#33691E');
                 }
                 ctx.fillStyle = pigGrad; ctx.beginPath(); ctx.arc(0, 0, r, 0, 2 * Math.PI); ctx.fill();
                 
-                // Dettagli Testa (Elmo, Corona, Benda Ninja)
+                // DETTAGLI SPECIALI
                 if (body.pigType === 'armored') {
-                    ctx.fillStyle = '#455A64'; ctx.beginPath(); ctx.arc(0, 0, r+2, Math.PI, Math.PI*2); ctx.fill();
-                    ctx.fillStyle='#CFD8DC'; ctx.beginPath(); ctx.arc(-10,-r, 2.5,0,Math.PI*2); ctx.arc(10,-r, 2.5,0,Math.PI*2); ctx.fill();
+                    const helmGrad = ctx.createLinearGradient(0, -r, 0, 0); helmGrad.addColorStop(0, '#CFD8DC'); helmGrad.addColorStop(1, '#546E7A');
+                    ctx.fillStyle = helmGrad; ctx.beginPath(); ctx.arc(0, -r*0.1, r*1.05, Math.PI, Math.PI*2); ctx.lineTo(r*1.05, r*0.4); ctx.lineTo(-r*1.05, r*0.4); ctx.fill();
+                    ctx.fillStyle = '#263238'; ctx.fillRect(-r*0.8, -r*0.1, r*1.6, r*0.45);
+                    ctx.fillStyle = '#000'; ctx.fillRect(-r*0.7, 0, r*1.4, r*0.1); 
+                    ctx.fillStyle='#B0BEC5'; ctx.beginPath(); ctx.arc(-r*0.9,r*0.15, 3,0,Math.PI*2); ctx.arc(r*0.9,r*0.15, 3,0,Math.PI*2); ctx.fill(); 
                 } else if (body.pigType === 'king') {
                     ctx.fillStyle = '#FFD700'; ctx.strokeStyle = '#F57F17'; ctx.lineWidth = 2;
-                    ctx.beginPath(); ctx.moveTo(-r/1.5, -r+5); ctx.lineTo(-r, -r-15); ctx.lineTo(-r/3, -r-5); ctx.lineTo(0, -r-20); ctx.lineTo(r/3, -r-5); ctx.lineTo(r, -r-15); ctx.lineTo(r/1.5, -r+5); ctx.fill(); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(-r*0.8, -r*0.5); ctx.lineTo(-r*1.1, -r*1.6); ctx.lineTo(-r*0.3, -r*0.8); ctx.lineTo(0, -r*1.8); ctx.lineTo(r*0.3, -r*0.8); ctx.lineTo(r*1.1, -r*1.6); ctx.lineTo(r*0.8, -r*0.5); ctx.closePath(); ctx.fill(); ctx.stroke();
+                    ctx.fillStyle = '#E53935'; ctx.beginPath(); ctx.arc(0, -r*1.2, r*0.15, 0, Math.PI*2); ctx.fill(); 
+                    ctx.fillStyle = '#1E88E5'; ctx.beginPath(); ctx.arc(-r*0.6, -r*0.9, r*0.12, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(r*0.6, -r*0.9, r*0.12, 0, Math.PI*2); ctx.fill(); 
                 } else if (body.pigType === 'ninja') {
-                    ctx.fillStyle = '#E53935'; ctx.fillRect(-r, -r/4, r*2, r/2); // Benda rossa
+                    ctx.fillStyle = '#E53935'; ctx.fillRect(-r, -r*0.4, r*2, r*0.4);
+                    ctx.beginPath(); ctx.moveTo(r*0.8, -r*0.2); ctx.quadraticCurveTo(r*1.5, -r*0.8, r*1.8, -r*0.3); ctx.quadraticCurveTo(r*1.2, 0, r*0.8, -r*0.1); ctx.fill();
                 } else {
-                    ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.beginPath(); ctx.ellipse(-r/2.2, -r/2.2, r/2.75, r/4.4, Math.PI/4, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.beginPath(); ctx.ellipse(-r/2.2, -r/2.2, r/2.75, r/4.4, Math.PI/4, 0, Math.PI*2); ctx.fill();
                 }
 
                 if (isBlinking || body.health < body.maxHealth / 2) {
-                    ctx.strokeStyle = '#1B5E20'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(r/2.5, -r/8); ctx.lineTo(r/1.5, -r/8); ctx.stroke(); ctx.beginPath(); ctx.moveTo(-r/1.5, -r/8); ctx.lineTo(-r/2.5, -r/8); ctx.stroke();
-                    if (body.health < body.maxHealth / 2) { ctx.fillStyle = '#FFCCBC'; ctx.fillRect(-r/2, -r/1.5, r*1.2, r/4); }
-                } else {
+                    if(body.pigType !== 'armored') { 
+                        ctx.strokeStyle = '#1B5E20'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(r/2.5, -r/8); ctx.lineTo(r/1.5, -r/8); ctx.stroke(); ctx.beginPath(); ctx.moveTo(-r/1.5, -r/8); ctx.lineTo(-r/2.5, -r/8); ctx.stroke();
+                    }
+                    if (body.health < body.maxHealth / 2 && body.pigType !== 'armored') { 
+                        ctx.fillStyle = '#FFCCBC'; ctx.fillRect(-r/2, -r/1.5, r*1.2, r/4); ctx.fillStyle = 'red'; ctx.fillRect(-r/4, -r/1.5, r*0.1, r/4);
+                    }
+                } else if(body.pigType !== 'armored') {
                     ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(r/1.8, -r/8, r/5.5, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(-r/1.8, -r/8, r/5.5, 0, Math.PI*2); ctx.fill();
                     ctx.fillStyle = 'black'; ctx.beginPath(); ctx.arc(r/1.7, -r/8, r/15, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(-r/1.9, -r/8, r/15, 0, Math.PI*2); ctx.fill();
                 }
+
                 const snoutY = r/5.5 + Math.sin(time * 0.01 + body.id) * 0.5; 
-                ctx.fillStyle = (body.pigType === 'ninja') ? '#4CAF50' : '#9CCC65'; 
-                ctx.beginPath(); ctx.ellipse(0, snoutY, r/2, r/2.75, 0, 0, Math.PI*2); ctx.fill(); ctx.strokeStyle = '#558B2F'; ctx.lineWidth=1.5; ctx.stroke();
+                ctx.fillStyle = (body.pigType === 'ninja') ? '#66BB6A' : '#9CCC65'; 
+                ctx.beginPath(); ctx.ellipse(0, snoutY, r/2, r/2.75, 0, 0, Math.PI*2); ctx.fill(); ctx.strokeStyle = '#558B2F'; ctx.lineWidth=2; ctx.stroke();
                 ctx.fillStyle = '#33691E'; ctx.beginPath(); ctx.ellipse(r/5.5, snoutY, r/8.8, r/5.5, 0, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.ellipse(-r/5.5, snoutY, r/8.8, r/5.5, 0, 0, Math.PI*2); ctx.fill();
 
             } else if (body.renderType === 'wood') {
-                ctx.fillStyle = '#D7A15C'; ctx.fillRect(-width/2, -height/2, width, height); ctx.strokeStyle = '#FFCC80'; ctx.lineWidth = 2; ctx.strokeRect(-width/2+1, -height/2+1, width-2, height-2); ctx.strokeStyle = '#5C3A21'; ctx.lineWidth = 2.5; ctx.strokeRect(-width/2, -height/2, width, height); 
-                ctx.strokeStyle = '#A16D3A'; ctx.lineWidth = 1.5;
+                const wGrad = ctx.createLinearGradient(-width/2, 0, width/2, 0); wGrad.addColorStop(0,'#D7A15C'); wGrad.addColorStop(0.5,'#E6BA80'); wGrad.addColorStop(1,'#C1853D');
+                ctx.fillStyle = wGrad; ctx.fillRect(-width/2, -height/2, width, height); ctx.strokeStyle = '#FFCC80'; ctx.lineWidth = 2; ctx.strokeRect(-width/2+1, -height/2+1, width-2, height-2); ctx.strokeStyle = '#5C3A21'; ctx.lineWidth = 3; ctx.strokeRect(-width/2, -height/2, width, height); 
+                ctx.strokeStyle = 'rgba(92,58,33,0.5)'; ctx.lineWidth = 1.5;
                 if (width > height) { ctx.beginPath(); ctx.moveTo(-width/2+2, -height/4); ctx.lineTo(width/2-2, -height/4); ctx.stroke(); ctx.beginPath(); ctx.moveTo(-width/2+2, height/4); ctx.lineTo(width/2-2, height/4); ctx.stroke(); } 
                 else { ctx.beginPath(); ctx.moveTo(-width/4, -height/2+2); ctx.lineTo(-width/4, height/2-2); ctx.stroke(); ctx.beginPath(); ctx.moveTo(width/4, -height/2+2); ctx.lineTo(width/4, height/2-2); ctx.stroke(); }
                 if (body.health < body.maxHealth * 0.5) drawCracks(width, height);
             } else if (body.renderType === 'stone') {
-                const stoneGrad = ctx.createLinearGradient(0, -height/2, 0, height/2); stoneGrad.addColorStop(0, '#B0BEC5'); stoneGrad.addColorStop(1, '#78909C');
-                ctx.fillStyle = stoneGrad; ctx.fillRect(-width/2, -height/2, width, height); ctx.strokeStyle = '#ECEFF1'; ctx.lineWidth = 2; ctx.strokeRect(-width/2+1, -height/2+1, width-2, height-2); ctx.strokeStyle = '#455A64'; ctx.lineWidth = 2.5; ctx.strokeRect(-width/2, -height/2, width, height);
-                ctx.fillStyle = '#546E7A'; ctx.beginPath(); ctx.arc(-width/4, -height/4, 4, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(width/3, height/4, 5, 0, Math.PI*2); ctx.fill();
+                const stoneGrad = ctx.createLinearGradient(-width/2, -height/2, width/2, height/2); stoneGrad.addColorStop(0, '#CFD8DC'); stoneGrad.addColorStop(0.5, '#90A4AE'); stoneGrad.addColorStop(1, '#607D8B');
+                ctx.fillStyle = stoneGrad; ctx.fillRect(-width/2, -height/2, width, height); ctx.strokeStyle = '#ECEFF1'; ctx.lineWidth = 2; ctx.strokeRect(-width/2+1, -height/2+1, width-2, height-2); ctx.strokeStyle = '#37474F'; ctx.lineWidth = 3; ctx.strokeRect(-width/2, -height/2, width, height);
+                ctx.fillStyle = 'rgba(55,71,79,0.3)'; ctx.beginPath(); ctx.arc(-width/4, -height/4, 5, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(width/3, height/4, 6, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(width/4, -height/3, 3, 0, Math.PI*2); ctx.fill();
                 if (body.health < body.maxHealth * 0.5) drawCracks(width, height);
             } else if (body.renderType === 'ice') {
-                ctx.fillStyle = 'rgba(179, 229, 252, 0.5)'; ctx.fillRect(-width/2, -height/2, width, height); ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)'; ctx.lineWidth = 3; ctx.strokeRect(-width/2, -height/2, width, height);
-                ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.beginPath(); ctx.moveTo(-width/2+2, -height/2+2); ctx.lineTo(width/2-2, -height/2+2); ctx.lineTo(-width/2+2, height/2-2); ctx.fill();
+                ctx.fillStyle = 'rgba(179, 229, 252, 0.4)'; ctx.fillRect(-width/2, -height/2, width, height); ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)'; ctx.lineWidth = 3; ctx.strokeRect(-width/2, -height/2, width, height);
+                ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.beginPath(); ctx.moveTo(-width/2+3, -height/2+3); ctx.lineTo(width/2-3, -height/2+3); ctx.lineTo(-width/2+3, height/2-3); ctx.fill();
                 if (body.health < body.maxHealth * 0.5) drawCracks(width, height);
             }
             ctx.restore();
@@ -961,7 +1086,7 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             if (typeof Matter === 'undefined') return;
             
-            cloudOffset += 0.3; // Anima le nuvole lentamente
+            cloudOffset += 0.3; 
 
             drawSky();
             if (Composite) { drawSlingshotBack(); drawAllBodies(); drawSlingshotFront(); }
