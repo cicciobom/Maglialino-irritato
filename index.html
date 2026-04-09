@@ -6,180 +6,198 @@
     <title>Maialino Irritato</title>
     <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48ZWxsaXBzZSBjeD0iNTAiIGN5PSI1MCIgcng9IjQ1IiByeT0iMzUiIGZpbGw9IiM4QkMzNEEiIHN0cm9rZT0iIzMzNjkxRSIgc3Ryb2tlLXdpZHRoPSI2Ii8+PGVsbGlwc2UgY3g9IjM1IiBjeT0iNTAiIHJ4PSI4IiByeT0iMTQiIGZpbGw9IiMxQjVFMjAiLz48ZWxsaXBzZSBjeD0iNjUiIGN5PSI1MCIgcng9IjgiIHJ5PSIxNCIgZmlsbD0iIzFCNUUyMCIvPjwvc3ZnPg==" type="image/svg+xml">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@800;900&family=Poppins:wght@700;900&display=swap');
+
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
-            overflow: hidden; background-color: #87CEEB;
-            font-family: 'Arial Black', Impact, 'Segoe UI', sans-serif;
+            overflow: hidden; background: #0277BD; /* Inizializzazione, sovrascritta dal JS */
+            font-family: 'Poppins', sans-serif;
             touch-action: none; user-select: none;
+            transition: background 1s ease; /* Transizione dolce cambio livello */
         }
 
         #game-container {
-            position: relative; width: 100%; height: 100%;
+            position: absolute; 
+            width: 1800px; 
+            height: 800px;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            transform-origin: center center;
             display: flex; justify-content: center; align-items: center;
         }
 
-        canvas { box-shadow: 0 0 20px rgba(0,0,0,0.5); background-color: #29B6F6; cursor: crosshair; }
+        canvas { 
+            display: block; width: 100%; height: 100%;
+            box-shadow: 0 0 40px rgba(0,0,0,0.8); cursor: crosshair; 
+            border-radius: 10px;
+        }
+
+        #ui-wrapper {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10;
+        }
 
         .ui-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; z-index: 10;
         }
 
-        /* MENU INIZIALE A TUTTO SCHERMO */
+        /* MENU INIZIALE A TUTTO SCHERMO - GLASSMORPHISM */
         #main-menu {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.6) 100%);
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: transparent;
+            display: flex; flex-direction: row; justify-content: space-evenly; align-items: center;
             z-index: 100; pointer-events: auto;
         }
 
-        .wood-board {
-            background: #DEB887;
-            background-image: repeating-linear-gradient(45deg, rgba(0,0,0,0.05) 0px, rgba(0,0,0,0.05) 2px, transparent 2px, transparent 6px);
-            border: 14px solid #4E2A12; border-radius: 35px; padding: 50px 70px;
-            box-shadow: inset 0 0 40px rgba(78,42,18,0.9), 0 30px 60px rgba(0,0,0,0.8);
-            position: relative; display: flex; flex-direction: column; align-items: center;
-            animation: swing 4s infinite ease-in-out alternate; transform-origin: top center;
-            z-index: 110;
+        .center-section {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
 
-        .wood-board::before, .wood-board::after {
-            content: ''; position: absolute; top: -160px; width: 20px; height: 160px;
-            background: repeating-linear-gradient(45deg, #d4a373, #d4a373 5px, #8b5a2b 5px, #8b5a2b 10px);
-            box-shadow: 3px 3px 8px rgba(0,0,0,0.6); z-index: -1; border-radius: 10px;
-        }
-        .wood-board::before { left: 50px; } .wood-board::after { right: 50px; }
-
-        .screw {
-            position: absolute; width: 24px; height: 24px; background: #333; border-radius: 50%;
-            box-shadow: inset 2px 2px 5px rgba(255,255,255,0.4), inset -2px -2px 5px rgba(0,0,0,0.9), 2px 2px 5px rgba(0,0,0,0.5);
-        }
-        .screw-tl { top: 15px; left: 15px; transform: rotate(15deg); } 
-        .screw-tr { top: 15px; right: 15px; transform: rotate(-30deg); }
-        .screw-bl { bottom: 15px; left: 15px; transform: rotate(45deg); } 
-        .screw-br { bottom: 15px; right: 15px; transform: rotate(-10deg); }
-
-        @keyframes swing { 0% { transform: rotate(-1.5deg); } 100% { transform: rotate(1.5deg); } }
-
-        /* TABELLONI LATERALI RECORD */
+        /* TABELLONI LATERALI GLASSMORPHISM */
         .side-board {
-            position: absolute; top: 50%; background: linear-gradient(135deg, #FFB74D, #F57C00);
-            border: 6px solid #FFF; border-radius: 25px; padding: 40px 30px 20px 30px;
-            box-shadow: 0 15px 30px rgba(0,0,0,0.5), inset 0 -5px 15px rgba(230,81,0,0.5);
-            display: flex; flex-direction: column; align-items: center; min-width: 180px; z-index: 105;
+            position: relative; 
+            background: rgba(20, 30, 45, 0.5);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.15); 
+            border-radius: 25px; padding: 40px 40px 20px 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            display: flex; flex-direction: column; align-items: center; min-width: 220px; z-index: 105;
+            transition: transform 0.3s ease, filter 0.3s ease;
         }
-        .board-ribbon {
-            position: absolute; top: -25px; background: #E53935; color: white;
-            padding: 10px 25px; border-radius: 20px; font-size: 22px; font-weight: 900;
-            border: 4px solid #FFF; box-shadow: 0 5px 10px rgba(0,0,0,0.4); white-space: nowrap;
-        }
-        .left-board { left: 4%; transform: translateY(-50%) rotate(-4deg); animation: floatSideL 3.5s infinite ease-in-out alternate; }
-        .right-board { right: 4%; transform: translateY(-50%) rotate(4deg); animation: floatSideR 4s infinite ease-in-out alternate; }
-        @keyframes floatSideL { 0% { transform: translateY(-50%) rotate(-4deg); } 100% { transform: translateY(-55%) rotate(-2deg); } }
-        @keyframes floatSideR { 0% { transform: translateY(-50%) rotate(4deg); } 100% { transform: translateY(-45%) rotate(2deg); } }
+        .side-board:hover { filter: brightness(1.1); }
 
-        .record-value { font-size: 55px; color: #FFF; font-weight: 900; text-shadow: 4px 4px 0 #E65100; margin: 10px 0; }
-        .record-label { font-size: 22px; color: #FFF; font-weight: bold; }
+        .board-ribbon {
+            position: absolute; top: -25px; background: linear-gradient(135deg, #FF4B2B, #E53935); color: white;
+            padding: 10px 30px; border-radius: 20px; font-size: 22px; font-weight: 900;
+            box-shadow: 0 10px 20px rgba(229, 57, 53, 0.4); white-space: nowrap; text-transform: uppercase; letter-spacing: 2px;
+        }
+        .left-board { transform: rotate(-4deg); animation: floatSideL 3.5s infinite ease-in-out alternate; }
+        .right-board { transform: rotate(4deg); animation: floatSideR 4s infinite ease-in-out alternate; }
+
+        .record-value { font-size: 70px; color: #FFF; font-family: 'Nunito', sans-serif; font-weight: 900; text-shadow: 0 0 20px rgba(255,255,255,0.5); margin: 10px 0; }
+        .record-label { font-size: 24px; color: #B0BEC5; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; }
+
+        @keyframes floatSideL { 0% { transform: translateY(-15px) rotate(-4deg); } 100% { transform: translateY(15px) rotate(-2deg); } }
+        @keyframes floatSideR { 0% { transform: translateY(-15px) rotate(4deg); } 100% { transform: translateY(15px) rotate(2deg); } }
 
         #main-menu h1 {
-            font-size: 90px; color: #FFF;
-            text-shadow: -5px -5px 0 #D32F2F, 5px -5px 0 #D32F2F, -5px 5px 0 #D32F2F, 5px 5px 0 #D32F2F, 0 12px 0 #9A0000;
-            text-transform: uppercase; line-height: 1.1; margin: 0; transform: rotate(-3deg); letter-spacing: 3px;
+            font-size: 150px; color: #FFF;
+            text-transform: uppercase; line-height: 1; margin: 0; letter-spacing: 5px; text-align: center;
         }
 
-        .subtitle { font-size: 28px; color: #FFEB3B; text-shadow: 2px 2px 0 #000; margin-bottom: 40px; text-transform: uppercase; }
+        .title-maialino {
+            display: inline-block;
+            background: linear-gradient(to bottom, #ffffff, #B0BEC5);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0px 10px 15px rgba(255, 255, 255, 0.6));
+        }
 
-        .pig-snout { filter: drop-shadow(0px 10px 10px rgba(0,0,0,0.7)); margin-bottom: 15px; animation: floatLogo 3s ease-in-out infinite; }
-        @keyframes floatLogo { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-12px) scale(1.05); } }
+        .title-irritato {
+            display: inline-block;
+            background: linear-gradient(to bottom, #FF8A80, #D32F2F);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            animation: pulseTextGlow 1.5s infinite alternate;
+        }
+
+        @keyframes pulseTextGlow {
+            0% { filter: drop-shadow(0 0 15px rgba(211, 47, 47, 0.8)); transform: scale(1); }
+            100% { filter: drop-shadow(0 0 45px rgba(255, 82, 82, 1)); transform: scale(1.02); }
+        }
+
+        .subtitle { font-size: 32px; color: #4FC3F7; text-shadow: 0 2px 10px rgba(0,0,0,0.8); margin-top: 10px; margin-bottom: 50px; text-transform: uppercase; letter-spacing: 6px; }
+
+        .pig-snout { filter: drop-shadow(0px 15px 20px rgba(0,0,0,0.6)); margin-bottom: 25px; animation: floatLogo 4s ease-in-out infinite; }
+        @keyframes floatLogo { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
 
         /* HUD */
-        .top-bar { display: flex; justify-content: space-between; padding: 20px 40px; pointer-events: none; }
-        .stats-container { display: flex; flex-direction: column; gap: 5px; }
-        .hud-text { font-size: 32px; font-weight: 900; color: white; text-shadow: 3px 3px 0 #000; }
-        .top-bar-right { display: flex; gap: 15px; pointer-events: auto; }
+        .top-bar { display: flex; justify-content: space-between; padding: 25px 40px; pointer-events: none; }
+        .stats-container { display: flex; flex-direction: column; gap: 5px; background: rgba(0,0,0,0.4); backdrop-filter: blur(10px); padding: 15px 25px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); }
+        .hud-text { font-size: 24px; font-family: 'Nunito', sans-serif; font-weight: 900; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.8); letter-spacing: 1px; }
+        .hud-small { font-size: 18px; color: #81D4FA; }
 
+        .top-bar-right { display: flex; gap: 15px; pointer-events: auto; align-items: flex-start; }
+
+        /* PULSANTI MODERNI */
         .action-circle-btn {
-            width: 65px; height: 65px; border-radius: 50%; border: 4px solid #FFF;
-            display: flex; justify-content: center; align-items: center; font-size: 30px; cursor: pointer;
-            box-shadow: 0 6px 0 rgba(0,0,0,0.5), 0 10px 15px rgba(0,0,0,0.5); transition: transform 0.1s, box-shadow 0.1s; outline: none;
+            width: 60px; height: 60px; border-radius: 50%; border: none;
+            display: flex; justify-content: center; align-items: center; font-size: 26px; cursor: pointer;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4); transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); outline: none;
+            background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); color: white; border: 1px solid rgba(255,255,255,0.2);
         }
-        .action-circle-btn:active { transform: translateY(6px); box-shadow: 0 0px 0 rgba(0,0,0,0.5), 0 4px 6px rgba(0,0,0,0.6); }
-        .btn-settings-top { background: radial-gradient(circle at 30% 30%, #CFD8DC, #78909C); color: #263238; }
-        .btn-restart-top { background: radial-gradient(circle at 30% 30%, #FF8A80, #C62828); color: white; }
-        .btn-menu-top { background: radial-gradient(circle at 30% 30%, #FFD54F, #FF8F00); color: white; }
+        .action-circle-btn:hover { transform: translateY(-5px) scale(1.1); background: rgba(255,255,255,0.25); }
+        .action-circle-btn:active { transform: translateY(2px) scale(0.95); }
 
-        /* PULSANTI GIOCA E LIVELLI */
-        .menu-buttons-container { display: flex; flex-direction: column; gap: 15px; align-items: center; }
+        .menu-buttons-container { display: flex; flex-direction: column; gap: 20px; align-items: center; width: 100%; }
         
-        .btn-play {
-            pointer-events: auto; padding: 18px 60px; font-size: 40px; font-weight: 900; color: white;
-            background: linear-gradient(to bottom, #8BC34A, #388E3C); border: 6px solid white; border-radius: 50px; cursor: pointer;
-            box-shadow: 0 10px 0 #1B5E20; text-transform: uppercase; animation: pulseBtn 2s infinite; outline: none;
+        .btn-modern {
+            pointer-events: auto; padding: 18px 0; width: 300px; font-size: 26px; font-weight: 900; color: white;
+            border: none; border-radius: 40px; cursor: pointer; text-transform: uppercase; letter-spacing: 2px;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); outline: none;
+            display: flex; justify-content: center; align-items: center;
         }
-        .btn-play:active { transform: translateY(10px); box-shadow: 0 0px 0 #1B5E20; animation: none; }
-        @keyframes pulseBtn { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-
-        .btn-secondary {
-            pointer-events: auto; padding: 12px 40px; font-size: 28px; font-weight: 900; color: white;
-            background: linear-gradient(to bottom, #29B6F6, #0277BD); border: 5px solid white; border-radius: 40px; cursor: pointer;
-            box-shadow: 0 8px 0 #01579B; text-transform: uppercase; outline: none;
-        }
-        .btn-secondary:active { transform: translateY(8px); box-shadow: 0 0px 0 #01579B; }
+        .btn-primary { background: linear-gradient(135deg, #43A047, #1B5E20); box-shadow: 0 15px 30px rgba(27, 94, 32, 0.4), inset 0 2px 0 rgba(255,255,255,0.3); }
+        .btn-primary:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(27, 94, 32, 0.6), inset 0 2px 0 rgba(255,255,255,0.4); filter: brightness(1.1); }
+        
+        .btn-secondary { background: linear-gradient(135deg, #039BE5, #01579B); box-shadow: 0 15px 30px rgba(1, 87, 155, 0.4), inset 0 2px 0 rgba(255,255,255,0.3); }
+        .btn-secondary:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(1, 87, 155, 0.6), inset 0 2px 0 rgba(255,255,255,0.4); filter: brightness(1.1); }
+        .btn-modern:active { transform: translateY(2px); box-shadow: 0 5px 10px rgba(0,0,0,0.5); }
 
         /* SELEZIONE LIVELLI */
-        .level-select-container { display: flex; align-items: center; gap: 20px; margin: 20px 0; }
+        .level-select-container { display: flex; align-items: center; gap: 30px; margin: 30px 0; }
         .arrow-btn {
-            width: 70px; height: 70px; font-size: 40px; color: white;
-            background: #5C3A21; border: 5px solid #FFF; border-radius: 50%;
-            cursor: pointer; box-shadow: 0 8px 0 #3E2723; display: flex; justify-content: center; align-items: center; outline: none;
+            width: 60px; height: 60px; font-size: 30px; color: white; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 50%;
+            cursor: pointer; display: flex; justify-content: center; align-items: center; outline: none; transition: all 0.2s;
         }
-        .arrow-btn:active { transform: translateY(5px); box-shadow: 0 3px 0 #3E2723; }
-        .arrow-btn.disabled { opacity: 0.3; cursor: not-allowed; }
+        .arrow-btn:hover:not(.disabled) { background: rgba(255,255,255,0.3); transform: scale(1.1); }
+        .arrow-btn.disabled { opacity: 0.2; cursor: not-allowed; }
 
-        .level-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+        .level-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
         .level-btn {
-            width: 70px; height: 70px; font-size: 32px; font-weight: bold; color: white;
-            background: linear-gradient(to bottom, #8BC34A, #388E3C); border: 4px solid white; border-radius: 15px;
-            cursor: pointer; box-shadow: 0 6px 0 #1B5E20; outline: none;
+            width: 80px; height: 80px; font-size: 32px; font-family: 'Nunito', sans-serif; font-weight: 900; color: white;
+            background: linear-gradient(135deg, #66BB6A, #2E7D32); border: none; border-radius: 20px;
+            cursor: pointer; box-shadow: 0 10px 20px rgba(46, 125, 50, 0.4), inset 0 2px 0 rgba(255,255,255,0.3); outline: none; transition: all 0.2s;
         }
-        .level-btn:active { transform: translateY(6px); box-shadow: 0 0px 0 #1B5E20; }
-        .level-btn.locked { background: #78909C; box-shadow: 0 6px 0 #455A64; cursor: not-allowed; opacity: 0.8; }
-        .level-btn.locked:active { transform: none; box-shadow: 0 6px 0 #455A64; }
+        .level-btn:hover:not(.locked) { transform: translateY(-5px); box-shadow: 0 15px 25px rgba(46, 125, 50, 0.6); filter: brightness(1.1); }
+        .level-btn:active:not(.locked) { transform: translateY(2px); box-shadow: 0 5px 10px rgba(46, 125, 50, 0.4); }
+        .level-btn.locked { background: rgba(255,255,255,0.05); box-shadow: none; border: 1px solid rgba(255,255,255,0.1); cursor: not-allowed; color: rgba(255,255,255,0.3); }
 
         /* MODALS */
-        .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 200; pointer-events: auto; }
-        .modal-box { background: #DEB887; background-image: repeating-linear-gradient(45deg, rgba(0,0,0,0.05) 0px, rgba(0,0,0,0.05) 2px, transparent 2px, transparent 6px); border: 10px solid #4E2A12; border-radius: 25px; padding: 40px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.9); min-width: 450px; position: relative; }
-        .modal-box h1 { margin: 0 0 15px 0; font-size: 50px; text-transform: uppercase; text-shadow: 2px 2px 0 #fff; color: #3E2723; }
-        .modal-box p { font-size: 30px; font-weight: 900; margin-bottom: 30px; color: #FFF; text-shadow: 2px 2px 0 #000; }
+        .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,10,20,0.85); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: none; justify-content: center; align-items: center; z-index: 200; pointer-events: auto; }
+        .modal-box { background: rgba(30, 40, 60, 0.8); border: 1px solid rgba(255,255,255,0.15); border-radius: 30px; padding: 50px; text-align: center; box-shadow: 0 40px 80px rgba(0,0,0,0.8); min-width: 450px; position: relative; }
+        .modal-box h1 { margin: 0 0 20px 0; font-size: 40px; text-transform: uppercase; color: #FFF; letter-spacing: 2px; }
+        .modal-box p { font-size: 24px; font-weight: normal; margin-bottom: 40px; color: #CFD8DC; }
         
-        .btn-modal { padding: 12px 30px; font-size: 24px; background: #FFC107; border: 4px solid white; border-radius: 20px; color: white; cursor: pointer; margin: 10px; font-weight: 900; outline: none; box-shadow: 0 6px 0 #E65100; }
-        .btn-modal:active { transform: translateY(6px); box-shadow: 0 0px 0 #E65100; }
-        .btn-close { background: linear-gradient(to bottom, #EF5350, #C62828); box-shadow: 0 6px 0 #b71c1c; }
-        .btn-close:active { box-shadow: 0 0px 0 #b71c1c; }
+        .btn-modal-action { padding: 15px 40px; font-size: 20px; font-family: 'Poppins', sans-serif; font-weight: bold; background: linear-gradient(135deg, #FFCA28, #F57F17); border: none; border-radius: 30px; color: #FFF; cursor: pointer; margin: 10px; outline: none; box-shadow: 0 10px 20px rgba(245, 127, 23, 0.4); transition: all 0.2s; text-transform: uppercase; }
+        .btn-modal-action:hover { transform: translateY(-3px); box-shadow: 0 15px 25px rgba(245, 127, 23, 0.6); filter: brightness(1.1); }
+        .btn-close-action { background: rgba(255,255,255,0.1); box-shadow: none; border: 1px solid rgba(255,255,255,0.2); }
+        .btn-close-action:hover { background: rgba(255,255,255,0.2); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
 
         /* IMPOSTAZIONI */
-        .settings-option { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: 20px; font-weight: bold; color: #3E2723; background: rgba(255,255,255,0.4); padding: 10px 20px; border-radius: 15px; border: 2px solid rgba(0,0,0,0.1); }
-        .switch { position: relative; display: inline-block; width: 60px; height: 34px; }
+        .settings-option { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-size: 18px; color: #FFF; background: rgba(0,0,0,0.3); padding: 15px 25px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); }
+        .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
         .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #ccc; transition: .4s; border-radius: 34px; border: 3px solid #999; }
-        .slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 4px; bottom: 3px; background: white; transition: .4s; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
-        input:checked + .slider { background: #4CAF50; border-color: #388E3C; }
-        input:checked + .slider:before { transform: translateX(24px); }
-        input[type=range] { -webkit-appearance: none; width: 130px; background: transparent; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 24px; width: 24px; border-radius: 50%; background: #4E2A12; cursor: pointer; margin-top: -8px; border: 3px solid #FFF; box-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 10px; cursor: pointer; background: #8D6E63; border-radius: 5px; border: 2px solid #3E2723; box-shadow: inset 0 1px 3px rgba(0,0,0,0.5); }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.2); transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background: white; transition: .4s; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+        input:checked + .slider { background: #4CAF50; }
+        input:checked + .slider:before { transform: translateX(22px); }
+        
+        input[type=range] { -webkit-appearance: none; width: 140px; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%; background: #FFF; cursor: pointer; margin-top: -8px; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: rgba(255,255,255,0.3); border-radius: 5px; }
 
         /* TITOLI DI CODA */
         #credits-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: #000; color: white; z-index: 500; display: none;
-            flex-direction: column; align-items: center; overflow: hidden;
+            flex-direction: column; align-items: center; overflow: hidden; pointer-events: auto;
         }
-        .credits-scroll { position: absolute; top: 100%; text-align: center; width: 100%; animation: scrollCredits 25s linear forwards; }
+        .credits-scroll { position: absolute; top: 100%; text-align: center; width: 100%; animation: scrollCredits 30s linear forwards; }
         @keyframes scrollCredits { from { top: 100%; } to { top: -150%; } }
-        .credits-scroll h1 { font-size: 60px; color: #FFD54F; margin-bottom: 50px; text-shadow: 2px 2px 0 #333; }
-        .credits-scroll h2 { font-size: 40px; color: #8BC34A; margin-top: 40px; }
-        .credits-scroll p { font-size: 30px; margin: 10px 0; }
+        .credits-scroll h1 { font-size: 70px; color: #FFCA28; margin-bottom: 60px; letter-spacing: 5px; text-shadow: 2px 2px 0 #333; }
+        .credits-scroll h2 { font-size: 35px; color: #81D4FA; margin-top: 60px; font-weight: normal; letter-spacing: 2px; }
+        .credits-scroll p { font-size: 24px; margin: 10px 0; color: #ECEFF1; font-family: 'Nunito', sans-serif; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
 </head>
@@ -187,155 +205,161 @@
 
     <div id="game-container">
         <canvas id="game-canvas"></canvas>
+        <div id="ui-wrapper">
         
-        <div class="ui-layer">
-            <div class="top-bar">
-                <div class="stats-container" id="game-stats" style="display:none;">
-                    <div class="hud-text">LIVELLO: <span id="level-display">1</span></div>
-                    <div class="hud-text">PUNTI: <span id="score-display">0</span></div>
-                    <div class="hud-text" style="font-size: 20px; color: #FFEB3B;">Uccelli: <span id="birds-left-display">3</span></div>
-                </div>
-                <div class="top-bar-right">
-                    <button class="action-circle-btn btn-menu-top" onclick="returnToMenu()">🏠</button>
-                    <button class="action-circle-btn btn-settings-top" onclick="openSettings()">⚙️</button>
-                    <button class="action-circle-btn btn-restart-top" onclick="retryLevel()" id="btn-restart-game" style="display:none;">🔄</button>
+            <div class="ui-layer">
+                <div class="top-bar">
+                    <div class="stats-container" id="game-stats" style="display:none;">
+                        <div class="hud-text">LIVELLO: <span id="level-display" style="color:#FFCA28">1</span></div>
+                        <div class="hud-text">PUNTI: <span id="score-display">0</span></div>
+                        <div class="hud-small">Uccelli Rimasti: <span id="birds-left-display" style="font-weight:bold; color:#FFF;">3</span></div>
+                    </div>
+                    <div class="top-bar-right">
+                        <button class="action-circle-btn" onclick="returnToMenu()" title="Menu Principale">🏠</button>
+                        <button class="action-circle-btn" onclick="openSettings()" title="Impostazioni">⚙️</button>
+                        <button class="action-circle-btn" onclick="retryLevel()" id="btn-restart-game" style="display:none;" title="Riavvia Livello">🔄</button>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div id="main-menu">
-            <div class="side-board left-board">
-                <div class="board-ribbon">🏆 RECORD 🏆</div>
-                <div class="record-value" id="best-score-display">0</div>
-                <div class="record-label">PUNTI</div>
+            <div id="main-menu">
+                <div class="side-board left-board">
+                    <div class="board-ribbon">🏆 RECORD</div>
+                    <div class="record-value" id="best-score-display">0</div>
+                    <div class="record-label">PUNTI</div>
+                </div>
+                
+                <div class="center-section">
+                    <svg class="pig-snout" viewBox="0 0 100 100" width="220" height="220">
+                        <defs>
+                            <radialGradient id="snoutGrad" cx="30%" cy="30%" r="70%">
+                                <stop offset="0%" stop-color="#AED581"/>
+                                <stop offset="70%" stop-color="#7CB342"/>
+                                <stop offset="100%" stop-color="#33691E"/>
+                            </radialGradient>
+                        </defs>
+                        <ellipse cx="50" cy="50" rx="46" ry="36" fill="url(#snoutGrad)" stroke="#1B5E20" stroke-width="4"/>
+                        <ellipse cx="35" cy="50" rx="7" ry="13" fill="#1B5E20"/>
+                        <ellipse cx="65" cy="50" rx="7" ry="13" fill="#1B5E20"/>
+                        <ellipse cx="50" cy="25" rx="25" ry="8" fill="rgba(255,255,255,0.4)"/>
+                    </svg>
+                    
+                    <h1><span class="title-maialino">MAIALINO</span><br><span class="title-irritato">IRRITATO</span></h1>
+                    <div class="subtitle">La vendetta continua</div>
+                    
+                    <div class="menu-buttons-container">
+                        <button class="btn-modern btn-primary" onclick="startGame()">▶ GIOCA ORA</button>
+                        <button class="btn-modern btn-secondary" onclick="openLevelSelect()">≡ LIVELLI</button>
+                    </div>
+                </div>
+                
+                <div class="side-board right-board">
+                    <div class="board-ribbon">⭐ MAX LVL</div>
+                    <div class="record-value" id="best-level-display">1</div>
+                    <div class="record-label">SBLOCCATO</div>
+                </div>
+            </div>
+
+            <!-- SELEZIONE LIVELLI -->
+            <div class="modal-overlay" id="levels-modal-overlay">
+                <div class="modal-box">
+                    <h1>Scegli Livello</h1>
+                    <div class="level-select-container">
+                        <button id="prev-page" class="arrow-btn" onclick="changeLevelPage(-1)">◀</button>
+                        <div class="level-grid" id="level-grid-container"></div>
+                        <button id="next-page" class="arrow-btn" onclick="changeLevelPage(1)">▶</button>
+                    </div>
+                    <button class="btn-modal-action btn-close-action" onclick="closeLevelSelect()" style="width:100%; margin-top:20px;">CHIUDI</button>
+                </div>
+            </div>
+
+            <!-- IMPOSTAZIONI COMPLETO -->
+            <div class="modal-overlay" id="settings-modal-overlay">
+                <div class="modal-box" style="min-width: 500px;">
+                    <h1>Impostazioni</h1>
+                    <div style="width: 100%;">
+                        <div class="settings-option">
+                            <span>Traiettoria Visiva</span>
+                            <label class="switch"><input type="checkbox" id="toggle-trajectory" checked onchange="toggleSetting('trajectory')"><span class="slider"></span></label>
+                        </div>
+                        <div class="settings-option">
+                            <span>Effetti Polvere</span>
+                            <label class="switch"><input type="checkbox" id="toggle-particles" checked onchange="toggleSetting('particles')"><span class="slider"></span></label>
+                        </div>
+                        <div class="settings-option">
+                            <span>🎵 Musica Chill</span>
+                            <input type="range" id="vol-music" min="0" max="1" step="0.1" value="0.4" oninput="AudioEngine.setVolume('music', this.value)">
+                        </div>
+                        <div class="settings-option">
+                            <span>💥 Effetti Gioco</span>
+                            <input type="range" id="vol-sfx" min="0" max="1" step="0.1" value="0.6" oninput="AudioEngine.setVolume('sfx', this.value)">
+                        </div>
+                        <div class="settings-option">
+                            <span>🐦 Voce Uccello</span>
+                            <input type="range" id="vol-voice" min="0" max="1" step="0.1" value="0.7" oninput="AudioEngine.setVolume('voice', this.value)">
+                        </div>
+                    </div>
+                    <button class="btn-modal-action btn-close-action" style="width:100%; margin-top: 15px;" onclick="closeSettings()">Chiudi</button>
+                </div>
+            </div>
+
+            <!-- MENU CHEAT (T) -->
+            <div class="modal-overlay" id="cheat-modal-overlay">
+                <div class="modal-box" style="border: 2px solid rgba(229, 57, 53, 0.5);">
+                    <h1 style="color: #FF5252;">MENU SEGRETO</h1>
+                    <p style="font-size: 16px; margin-top: -10px;">I trucchi disattivano i record!</p>
+                    <div style="width: 100%;">
+                        <div class="settings-option">
+                            <span>Sblocca Tutti i Livelli</span>
+                            <button class="btn-modal-action" style="margin:0; padding: 5px 20px; font-size: 16px;" onclick="unlockAllLevelsCheat(this)">SBLOCCA</button>
+                        </div>
+                        <div class="settings-option">
+                            <span>Uccello Terremoto (Boom!)</span>
+                            <label class="switch"><input type="checkbox" id="toggle-superbird" onchange="toggleSetting('superbird')"><span class="slider" style="background-color: #E53935;"></span></label>
+                        </div>
+                    </div>
+                    <button class="btn-modal-action btn-close-action" style="width:100%; margin-top: 15px;" onclick="closeCheatMenu()">Chiudi</button>
+                </div>
+            </div>
+
+            <!-- MODAL FINE LIVELLO -->
+            <div class="modal-overlay" id="game-modal-overlay">
+                <div class="modal-box">
+                    <h1 id="modal-title" style="font-size: 60px; color: #4CAF50;">Vittoria!</h1>
+                    <p id="modal-score" style="font-size: 30px; font-weight: bold; color: #FFF;">Punti: 0</p>
+                    <div style="display:flex; gap:20px; width:100%; margin-top:20px;">
+                        <button class="btn-modal-action btn-close-action" style="flex:1;" onclick="returnToMenu()">MENU</button>
+                        <button class="btn-modal-action" id="modal-btn" style="flex:1;" onclick="nextLevel()">AVANTI ▶</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TITOLI DI CODA -->
+            <div id="credits-overlay">
+                <div class="credits-scroll" id="credits-content">
+                    <h1>MAIALINO IRRITATO</h1>
+                    <p>Hai sconfitto l'esercito dei maiali!</p>
+                    <h2>DESIGN & CODICE</h2>
+                    <p>Gemini AI & Tu</p>
+                    <h2>MUSICA CHILL</h2>
+                    <p>Sintetizzatore Lo-Fi Procedurale</p>
+                    <h2>VOCI ANIMALI</h2>
+                    <p>L'Uccello "Weeeeee!"</p>
+                    <p>I Maiali "Oink!"</p>
+                    <h2>GRAFICA</h2>
+                    <p>Glassmorphism UI</p>
+                    <p>Texture Procedurali e Parallasse</p>
+                    <h2>GRAZIE PER AVER GIOCATO!</h2>
+                    <button class="btn-modern btn-primary" onclick="location.reload()" style="margin-top:60px;">RICOMINCIA</button>
+                </div>
             </div>
             
-            <div class="wood-board">
-                <div class="screw screw-tl"></div><div class="screw screw-tr"></div>
-                <div class="screw screw-bl"></div><div class="screw screw-br"></div>
-                
-                <svg class="pig-snout" viewBox="0 0 100 100" width="160" height="160">
-                    <ellipse cx="50" cy="50" rx="45" ry="35" fill="#8BC34A" stroke="#33691E" stroke-width="6"/>
-                    <ellipse cx="35" cy="50" rx="8" ry="14" fill="#1B5E20"/>
-                    <ellipse cx="65" cy="50" rx="8" ry="14" fill="#1B5E20"/>
-                    <ellipse cx="50" cy="25" rx="30" ry="8" fill="rgba(255,255,255,0.5)"/>
-                </svg>
-                
-                <h1>MAIALINO<br>IRRITATO</h1>
-                <div class="subtitle">La vendetta continua</div>
-                
-                <div class="menu-buttons-container">
-                    <button class="btn-play" onclick="startGame()">GIOCA ORA</button>
-                    <button class="btn-secondary" onclick="openLevelSelect()">LIVELLI</button>
-                </div>
-            </div>
-            
-            <div class="side-board right-board">
-                <div class="board-ribbon">⭐ LIVELLO ⭐</div>
-                <div class="record-value" id="best-level-display">1</div>
-                <div class="record-label">MASSIMO</div>
-            </div>
-        </div>
-
-        <!-- SELEZIONE LIVELLI -->
-        <div class="modal-overlay" id="levels-modal-overlay">
-            <div class="modal-box">
-                <div class="screw screw-tl"></div><div class="screw screw-tr"></div>
-                <div class="screw screw-bl"></div><div class="screw screw-br"></div>
-                <h1>Scegli Livello</h1>
-                <div class="level-select-container">
-                    <button id="prev-page" class="arrow-btn" onclick="changeLevelPage(-1)">◀</button>
-                    <div class="level-grid" id="level-grid-container"></div>
-                    <button id="next-page" class="arrow-btn" onclick="changeLevelPage(1)">▶</button>
-                </div>
-                <button class="btn-modal btn-close" onclick="closeLevelSelect()">CHIUDI</button>
-            </div>
-        </div>
-
-        <!-- IMPOSTAZIONI COMPLETO -->
-        <div class="modal-overlay" id="settings-modal-overlay">
-            <div class="modal-box" style="min-width: 480px;">
-                <div class="screw screw-tl"></div><div class="screw screw-tr"></div>
-                <div class="screw screw-bl"></div><div class="screw screw-br"></div>
-                <h1>Impostazioni</h1>
-                <div class="settings-option">
-                    <span>Traiettoria Visiva</span>
-                    <label class="switch"><input type="checkbox" id="toggle-trajectory" checked onchange="toggleSetting('trajectory')"><span class="slider"></span></label>
-                </div>
-                <div class="settings-option">
-                    <span>Effetti Polvere</span>
-                    <label class="switch"><input type="checkbox" id="toggle-particles" checked onchange="toggleSetting('particles')"><span class="slider"></span></label>
-                </div>
-                <div class="settings-option">
-                    <span>🎵 Musica Chill</span>
-                    <input type="range" id="vol-music" min="0" max="1" step="0.1" value="0.4" oninput="AudioEngine.setVolume('music', this.value)">
-                </div>
-                <div class="settings-option">
-                    <span>💥 Effetti Gioco</span>
-                    <input type="range" id="vol-sfx" min="0" max="1" step="0.1" value="0.6" oninput="AudioEngine.setVolume('sfx', this.value)">
-                </div>
-                <div class="settings-option">
-                    <span>🐦 Voce "Yey!"</span>
-                    <input type="range" id="vol-voice" min="0" max="1" step="0.1" value="0.7" oninput="AudioEngine.setVolume('voice', this.value)">
-                </div>
-                <button class="btn-modal btn-close" style="margin-top: 15px;" onclick="closeSettings()">Chiudi</button>
-            </div>
-        </div>
-
-        <!-- MENU CHEAT (T) -->
-        <div class="modal-overlay" id="cheat-modal-overlay">
-            <div class="modal-box" style="border-color: #9C27B0;">
-                <div class="screw screw-tl"></div><div class="screw screw-tr"></div>
-                <div class="screw screw-bl"></div><div class="screw screw-br"></div>
-                <h1 style="color: #9C27B0; text-shadow: 2px 2px 0 #FFF;">MENU SEGRETO</h1>
-                <p style="font-size: 18px; color: #333; text-shadow: none; margin-top: -15px;">I trucchi disattivano i record!</p>
-                <div class="settings-option">
-                    <span>Sblocca Tutti i Livelli</span>
-                    <button class="btn-modal" style="margin:0; padding: 8px 20px; font-size: 18px;" onclick="unlockAllLevelsCheat(this)">SBLOCCA</button>
-                </div>
-                <div class="settings-option">
-                    <span>Uccello Terremoto (Boom!)</span>
-                    <label class="switch"><input type="checkbox" id="toggle-superbird" onchange="toggleSetting('superbird')"><span class="slider" style="background-color: #7B1FA2;"></span></label>
-                </div>
-                <button class="btn-modal btn-close" style="margin-top: 15px;" onclick="closeCheatMenu()">Chiudi</button>
-            </div>
-        </div>
-
-        <!-- MODAL FINE LIVELLO -->
-        <div class="modal-overlay" id="game-modal-overlay">
-            <div class="modal-box">
-                <div class="screw screw-tl"></div><div class="screw screw-tr"></div>
-                <div class="screw screw-bl"></div><div class="screw screw-br"></div>
-                <h1 id="modal-title">Vittoria!</h1>
-                <p id="modal-score">Punti: 0</p>
-                <button class="btn-modal" id="modal-btn" onclick="nextLevel()">Prossimo Livello</button>
-                <button class="btn-modal btn-close" onclick="returnToMenu()">Menu</button>
-            </div>
-        </div>
-
-        <!-- TITOLI DI CODA -->
-        <div id="credits-overlay">
-            <div class="credits-scroll" id="credits-content">
-                <h1>MAIALINO IRRITATO</h1>
-                <p>Hai sconfitto l'esercito dei maiali!</p>
-                <h2>DESIGN & CODICE</h2>
-                <p>Gemini AI & Tu</p>
-                <h2>MUSICA CHILL</h2>
-                <p>Sintetizzatore Lo-Fi Procedurale</p>
-                <h2>VOCI ANIMALI</h2>
-                <p>L'Uccello "Weeeeee!"</p>
-                <p>I Maiali "Oink!"</p>
-                <h2>GRAFICA</h2>
-                <p>Effetti Parallasse & Texture 3D</p>
-                <h2>GRAZIE PER AVER GIOCATO!</h2>
-                <button class="btn-play" onclick="location.reload()" style="margin-top:50px;">RICOMINCIA</button>
-            </div>
         </div>
     </div>
 
     <script>
         // ==========================================
-        // GESTIONE AUDIO CHILL / AMBIENT (FIXATO)
+        // GESTIONE AUDIO CHILL / AMBIENT (SICURO)
         // ==========================================
         const AudioEngine = {
             ctx: null, nodes: {}, volumes: { music: 0.4, sfx: 0.6, voice: 0.7 },
@@ -363,6 +387,7 @@
             playLaunch() {
                 if(!this.ctx || this.volumes.sfx === 0) return;
                 try {
+                    if(this.ctx.state !== 'running') return;
                     const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
                     osc.type = 'triangle'; osc.frequency.setValueAtTime(300, this.ctx.currentTime);
                     osc.frequency.exponentialRampToValueAtTime(900, this.ctx.currentTime + 0.3);
@@ -373,6 +398,7 @@
             playYey() {
                 if(!this.ctx || this.volumes.voice === 0) return;
                 try {
+                    if(this.ctx.state !== 'running') return;
                     const osc1 = this.ctx.createOscillator(); const osc2 = this.ctx.createOscillator(); const gain = this.ctx.createGain();
                     osc1.type = 'sine'; osc2.type = 'sawtooth';
                     osc1.frequency.setValueAtTime(500, this.ctx.currentTime); osc1.frequency.exponentialRampToValueAtTime(1800, this.ctx.currentTime + 0.4);
@@ -385,6 +411,7 @@
             playOink(isHit = false) {
                 if(!this.ctx || this.volumes.sfx === 0) return;
                 try {
+                    if(this.ctx.state !== 'running') return;
                     const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain(); const filter = this.ctx.createBiquadFilter();
                     osc.type = 'sawtooth'; filter.type = 'lowpass';
                     let duration = isHit ? 0.15 : 0.35; let startFreq = isHit ? 250 : 150; let endFreq = isHit ? 180 : 50;
@@ -397,6 +424,7 @@
             playHit(intensity) {
                 if(!this.ctx || this.volumes.sfx === 0) return;
                 try {
+                    if(this.ctx.state !== 'running' || !this.ctx.createBuffer) return;
                     const bufferSize = this.ctx.sampleRate * 0.1; const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate); const data = buffer.getChannelData(0);
                     for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
                     const noise = this.ctx.createBufferSource(); noise.buffer = buffer;
@@ -428,6 +456,7 @@
                     if(!this.ctx || this.volumes.music === 0) return;
                     const now = this.ctx.currentTime;
                     try {
+                        if(this.ctx.state !== 'running') return;
                         if (step === 0) { 
                             chords[measure].forEach((freq, i) => {
                                 const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
@@ -465,11 +494,12 @@
         const MAT_STONE= { density: 0.02, friction: 0.95, restitution: 0.01, frictionStatic: 10 };
         const MAT_ICE  = { density: 0.002, friction: 0.3, restitution: 0.05 };
 
+        // Temi migliorati
         const MAP_THEMES = [
-            { sky: ['#29B6F6', '#81D4FA', '#E1F5FE'], ground: ['#5D4037', '#3E2723'], grass: ['#7CB342', '#33691E'], grassLine: '#CDDC39', sun: true, mount1: '#4FC3F7', mount2: '#29B6F6' },
-            { sky: ['#FF7043', '#FFCA28', '#FFE082'], ground: ['#4E342E', '#212121'], grass: ['#F57F17', '#E65100'], grassLine: '#FFD54F', sun: true, mount1: '#FF8A65', mount2: '#FF7043' },
-            { sky: ['#1A237E', '#283593', '#3F51B5'], ground: ['#263238', '#000000'], grass: ['#37474F', '#1c262b'], grassLine: '#546E7A', sun: false, mount1: '#303F9F', mount2: '#283593' },
-            { sky: ['#B3E5FC', '#E1F5FE', '#FFFFFF'], ground: ['#795548', '#4E342E'], grass: ['#FFFFFF', '#CFD8DC'], grassLine: '#E0F7FA', sun: true, mount1: '#81D4FA', mount2: '#4FC3F7' }
+            { sky: ['#0277BD', '#4FC3F7', '#E1F5FE'], ground: ['#4E342E', '#3E2723'], grass: ['#8BC34A', '#33691E'], grassLine: '#C5E1A5', sun: true, mount1: '#29B6F6', mount2: '#039BE5' },
+            { sky: ['#E65100', '#FF8F00', '#FFE082'], ground: ['#3E2723', '#212121'], grass: ['#F57F17', '#E65100'], grassLine: '#FFE082', sun: true, mount1: '#FFB300', mount2: '#F57C00' },
+            { sky: ['#1A237E', '#283593', '#5C6BC0'], ground: ['#263238', '#000000'], grass: ['#37474F', '#1c262b'], grassLine: '#78909C', sun: false, mount1: '#3949AB', mount2: '#283593' },
+            { sky: ['#81D4FA', '#B3E5FC', '#FFFFFF'], ground: ['#5D4037', '#3E2723'], grass: ['#FFFFFF', '#CFD8DC'], grassLine: '#E0F7FA', sun: true, mount1: '#B3E5FC', mount2: '#4FC3F7' }
         ];
 
         let engine, world, runner, canvas, ctx;
@@ -482,23 +512,25 @@
         let settingTrajectory = true, settingParticles = true;
         let menuSpawnTimer = 0; 
 
-        // Variabili CHEAT
-        let isCheatActive = false;
-        let superBirdCheat = false;
+        let isCheatActive = false, superBirdCheat = false;
 
         let Engine, Runner, World, Bodies, Constraint, Events, Vector, Composite, Body, Sleeping;
 
         function init() {
             if (typeof Matter === 'undefined') { setTimeout(init, 50); return; }
-
             Engine = Matter.Engine; Runner = Matter.Runner; World = Matter.World;
             Bodies = Matter.Bodies; Constraint = Matter.Constraint; Events = Matter.Events;
             Vector = Matter.Vector; Composite = Matter.Composite; Body = Matter.Body; Sleeping = Matter.Sleeping;
 
             canvas = document.getElementById('game-canvas'); ctx = canvas.getContext('2d');
+            
+            // Impostiamo fisicamente la risoluzione del canvas prima di tutto!
+            canvas.width = GAME_WIDTH;
+            canvas.height = GAME_HEIGHT;
+
             window.addEventListener('resize', handleResize); handleResize();
 
-            for(let i=0; i<50; i++) { stars.push({ x: Math.random() * GAME_WIDTH, y: Math.random() * (GAME_HEIGHT/2), size: Math.random() * 2 + 1 }); }
+            for(let i=0; i<80; i++) { stars.push({ x: Math.random() * GAME_WIDTH, y: Math.random() * (GAME_HEIGHT/1.5), size: Math.random() * 2.5 + 0.5 }); }
 
             engine = Engine.create({ enableSleeping: true });
             engine.positionIterations = 16; engine.velocityIterations = 12; world = engine.world;
@@ -512,7 +544,7 @@
         }
 
         // ==========================================
-        // GESTIONE RECORD
+        // GESTIONE RECORD E SFONDO DINAMICO
         // ==========================================
         function loadRecords() {
             const savedScore = localStorage.getItem('maialino_bestScore');
@@ -533,6 +565,12 @@
         function updateMenuRecords() {
             document.getElementById('best-score-display').innerText = bestScore;
             document.getElementById('best-level-display').innerText = maxLevelUnlocked;
+        }
+
+        function updateBodyBackground() {
+            const theme = getCurrentTheme();
+            document.body.style.background = `linear-gradient(to bottom, ${theme.sky[0]}, ${theme.sky[2]})`;
+            document.body.style.backgroundSize = 'cover';
         }
 
         // ==========================================
@@ -561,7 +599,7 @@
         function unlockAllLevelsCheat(btn) {
             maxLevelUnlocked = 15; isCheatActive = true;
             saveRecords(); updateMenuRecords();
-            btn.innerText = "SBLOCCATI!"; btn.style.background = "#4CAF50"; btn.disabled = true;
+            btn.innerText = "SBLOCCATI!"; btn.style.background = "#4CAF50"; btn.style.boxShadow = "none"; btn.disabled = true;
         }
 
         // ==========================================
@@ -572,18 +610,19 @@
             document.getElementById('game-stats').style.display = 'none';
             document.getElementById('btn-restart-game').style.display = 'none';
             Engine.clear(engine); World.clear(world);
-            engine.gravity.y = 1.0; 
+            engine.gravity.y = 0.8; 
+            updateBodyBackground(); 
             createEnvironmentAPI(); 
-            menuSpawnTimer = setInterval(spawnMenuEntities, 1000);
+            menuSpawnTimer = setInterval(spawnMenuEntities, 800);
         }
 
         function spawnMenuEntities() {
-            if (gameState !== 'menu' || Composite.allBodies(world).length > 35) return;
+            if (gameState !== 'menu' || Composite.allBodies(world).length > 45) return;
             let isBird = Math.random() > 0.5;
-            let xPos = 200 + Math.random() * (GAME_WIDTH - 400);
+            let xPos = 100 + Math.random() * (GAME_WIDTH - 200);
             let b = isBird ? 
-                Bodies.circle(xPos, -50, BIRD_RADIUS, { ...MAT_BIRD, renderType: 'bird', restitution: 0.8, frictionAir: 0.02 }) :
-                Bodies.circle(xPos, -50, 26, { ...MAT_PIG, renderType: 'pig', pigType: 'normal', restitution: 0.8, frictionAir: 0.02 });
+                Bodies.circle(xPos, -50, BIRD_RADIUS, { ...MAT_BIRD, renderType: 'bird', restitution: 0.9, frictionAir: 0.01 }) :
+                Bodies.circle(xPos, -50, 26, { ...MAT_PIG, renderType: 'pig', pigType: 'normal', restitution: 0.9, frictionAir: 0.01 });
             World.add(world, b);
         }
 
@@ -639,11 +678,13 @@
         function nextLevel() { currentLevel++; initGame(); }
         function retryLevel() { initGame(); }
 
+        // MANTIENE IL GIOCO SEMPRE DENTRO LO SCHERMO IN MANIERA PERFETTA
         function handleResize() {
-            const windowRatio = window.innerWidth / window.innerHeight; const gameRatio = GAME_WIDTH / GAME_HEIGHT;
-            if (windowRatio < gameRatio) { canvas.style.width = window.innerWidth + 'px'; canvas.style.height = (window.innerWidth / gameRatio) + 'px'; } 
-            else { canvas.style.width = (window.innerHeight * gameRatio) + 'px'; canvas.style.height = window.innerHeight + 'px'; }
-            canvas.width = GAME_WIDTH; canvas.height = GAME_HEIGHT;
+            const scale = Math.min(window.innerWidth / GAME_WIDTH, window.innerHeight / GAME_HEIGHT);
+            const container = document.getElementById('game-container');
+            if (container) {
+                container.style.transform = `translate(-50%, -50%) scale(${scale})`;
+            }
         }
 
         function getCurrentTheme() { return MAP_THEMES[(currentLevel - 1) % MAP_THEMES.length]; }
@@ -659,13 +700,14 @@
             birdsLeft = Math.min(3 + Math.floor(currentLevel / 2), 6); 
             gameState = 'ready'; particles = []; birdTrail = []; bodiesToRemove = []; pigsTotal = 0;
             updateUI();
+            updateBodyBackground(); // Allinea colore sfondo al livello
 
             Engine.clear(engine); World.clear(world); engine.gravity.y = 1.5;
             createEnvironmentAPI(); createLevelDesign(); loadNextBird();
         }
 
         // ==========================================
-        // API PAVIMENTO E BARRIERE FISICHE CORRETTE
+        // API PAVIMENTO E BARRIERE FISICHE
         // ==========================================
         function createEnvironmentAPI() {
             const ground1 = Bodies.rectangle(250, GAME_HEIGHT - 60, 700, 120, { isStatic: true, renderType: 'invisible', friction: 1 });
@@ -675,7 +717,7 @@
             
             const wallLeft = Bodies.rectangle(-50, GAME_HEIGHT/2, 100, GAME_HEIGHT*3, { isStatic: true, renderType: 'invisible', friction: 1, restitution: 0.8 });
             const wallRight = Bodies.rectangle(GAME_WIDTH + 50, GAME_HEIGHT/2, 100, GAME_HEIGHT*3, { isStatic: true, renderType: 'invisible', friction: 1, restitution: 0.8 });
-            const ceiling = Bodies.rectangle(GAME_WIDTH/2, -800, GAME_WIDTH*3, 200, { isStatic: true, renderType: 'invisible' });
+            const ceiling = Bodies.rectangle(GAME_WIDTH/2, -800, GAME_WIDTH*3, 200, { isStatic: true, renderType: 'invisible', restitution: 0.5 });
 
             World.add(world, [baseGround, ground1, ground2, ramp, wallLeft, wallRight, ceiling]);
         }
@@ -752,7 +794,7 @@
         }
 
         // ==========================================
-        // GESTIONE EVENTI MOUSE 
+        // GESTIONE EVENTI MOUSE E DRAG
         // ==========================================
         function setupMouse() {
             const getMousePos = (e) => {
@@ -776,7 +818,7 @@
                         if (!b.isStatic && b.renderType !== 'invisible') {
                             const dist = Vector.magnitude(Vector.sub(b.position, pos));
                             if (dist < 200) {
-                                const force = Vector.mult(Vector.normalise(Vector.sub(b.position, pos)), 0.04);
+                                const force = Vector.mult(Vector.normalise(Vector.sub(b.position, pos)), 0.06);
                                 Body.applyForce(b, b.position, force);
                             }
                         }
@@ -821,7 +863,7 @@
                     let mult = (bodyA.renderType === 'bird' || bodyB.renderType === 'bird') ? 5.0 : 1.0;
                     const finalDamage = speedSq * mult;
 
-                    // GESTIONE CHEAT UCCELLO TERREMOTO
+                    // CHEAT UCCELLO TERREMOTO
                     if (superBirdCheat && gameState === 'flying') {
                         if ((bodyA.renderType === 'bird' && bodyB.renderType === 'invisible') || 
                             (bodyB.renderType === 'bird' && bodyA.renderType === 'invisible')) {
@@ -899,7 +941,7 @@
         }
 
         // ==========================================
-        // DISEGNO: PARALLASSE E TERRENO FIXATO
+        // DISEGNO: TEXTURES REALISTICHE E PARALLASSE
         // ==========================================
         function drawSky() {
             const theme = getCurrentTheme();
@@ -931,7 +973,6 @@
             ctx.fillStyle = theme.mount2; ctx.beginPath(); ctx.moveTo(900, GAME_HEIGHT); ctx.quadraticCurveTo(1500, GAME_HEIGHT - 450, 2100, GAME_HEIGHT); ctx.fill();
         }
 
-        // TERRENO CONTINUO SOLIDO E SENZA BUCHI GRAFICI
         function drawGround() {
             const theme = getCurrentTheme();
             const plat1Grad = ctx.createLinearGradient(0, GAME_HEIGHT-150, 0, GAME_HEIGHT);
@@ -945,36 +986,11 @@
                 ctx.lineTo(GAME_WIDTH, GAME_HEIGHT - 250); 
             }
 
-            // 1. TERRA NUDA MARRONE
-            ctx.fillStyle = plat1Grad;
-            ctx.beginPath(); 
-            ctx.moveTo(0, GAME_HEIGHT); 
-            traceTerrainPath(ctx);
-            ctx.lineTo(GAME_WIDTH, GAME_HEIGHT); 
-            ctx.closePath(); 
-            ctx.fill();
+            ctx.fillStyle = plat1Grad; ctx.beginPath(); ctx.moveTo(0, GAME_HEIGHT); traceTerrainPath(ctx); ctx.lineTo(GAME_WIDTH, GAME_HEIGHT); ctx.closePath(); ctx.fill();
 
-            // 2. MANTO ERBOSO
-            ctx.fillStyle = theme.grass[0];
-            ctx.beginPath(); 
-            ctx.moveTo(0, GAME_HEIGHT - 90); 
-            traceTerrainPath(ctx); 
-            ctx.lineTo(GAME_WIDTH, GAME_HEIGHT - 220); 
-            ctx.lineTo(1010, GAME_HEIGHT - 220); 
-            ctx.lineTo(890, GAME_HEIGHT - 30); 
-            ctx.lineTo(540, GAME_HEIGHT - 30); 
-            ctx.quadraticCurveTo(250, GAME_HEIGHT - 90, 0, GAME_HEIGHT - 90); 
-            ctx.closePath();
-            ctx.fill();
+            ctx.fillStyle = theme.grass[0]; ctx.beginPath(); ctx.moveTo(0, GAME_HEIGHT - 90); traceTerrainPath(ctx); ctx.lineTo(GAME_WIDTH, GAME_HEIGHT - 220); ctx.lineTo(1010, GAME_HEIGHT - 220); ctx.lineTo(890, GAME_HEIGHT - 30); ctx.lineTo(540, GAME_HEIGHT - 30); ctx.quadraticCurveTo(250, GAME_HEIGHT - 90, 0, GAME_HEIGHT - 90); ctx.closePath(); ctx.fill();
 
-            // 3. LINEA SUPERIORE DI CONTORNO
-            ctx.strokeStyle = theme.grassLine; 
-            ctx.lineWidth = 8;
-            ctx.lineJoin = 'round';
-            ctx.beginPath(); 
-            ctx.moveTo(0, GAME_HEIGHT - 120);
-            traceTerrainPath(ctx);
-            ctx.stroke();
+            ctx.strokeStyle = theme.grassLine; ctx.lineWidth = 8; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(0, GAME_HEIGHT - 120); traceTerrainPath(ctx); ctx.stroke();
         }
 
         function drawSlingshotBack() {
@@ -1001,7 +1017,7 @@
         }
 
         function drawSlingshotFront() {
-            if(gameState === 'menu') return; // Nascondi fionda nel menu
+            if(gameState === 'menu') return; 
             const sx = SLING_ANCHOR.x + SLING_VISUAL_OFFSET; const sy = SLING_ANCHOR.y; const trunkBottomY = GAME_HEIGHT - 60; 
             let birdX = SLING_ANCHOR.x; let birdY = SLING_ANCHOR.y + 15; 
             if ((gameState === 'dragging' || gameState === 'ready') && currentBird) { birdX = currentBird.position.x; birdY = currentBird.position.y; }
@@ -1133,8 +1149,8 @@
         function showModal(win) {
             const modal = document.getElementById('game-modal-overlay'); const title = document.getElementById('modal-title'); const scoreText = document.getElementById('modal-score'); const btn = document.getElementById('modal-btn');
             modal.style.display = 'flex'; scoreText.innerText = `Punti totali: ${score}`;
-            if (win) { title.innerText = 'LIVELLO SUPERATO!'; title.className = 'win-text'; btn.innerText = 'Prossimo Livello'; btn.onclick = nextLevel; } 
-            else { title.innerText = 'SCONFITTA!'; title.className = 'lose-text'; btn.innerText = 'Riprova'; btn.onclick = retryLevel; }
+            if (win) { title.innerText = 'LIVELLO SUPERATO!'; title.style.color = '#4CAF50'; btn.innerText = 'Prossimo Livello'; btn.onclick = nextLevel; } 
+            else { title.innerText = 'SCONFITTA!'; title.style.color = '#F44336'; btn.innerText = 'Riprova'; btn.onclick = retryLevel; }
         }
 
         window.onload = init;
